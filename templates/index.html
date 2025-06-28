@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PsiChat - Ayudante Emocional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Chart.js CDN for the spider view -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 768px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 90vh; /* Adjust height for full view */
+        }
+        .header {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-tabs {
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
+        }
+        .nav-tab {
+            padding: 0.75rem 1.25rem;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            color: #64748b;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-tab.active {
+            color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .nav-tab:hover:not(.active) {
+            color: #1e293b;
+        }
+        .content-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-box {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: #f9fafb;
+            scroll-behavior: smooth;
+        }
+        .message {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            word-wrap: break-word;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            line-height: 1.4;
+        }
+        .message.user {
+            background-color: #e0f2fe; /* Light blue */
+            align-self: flex-end; /* Align to the right */
+            border-bottom-right-radius: 0.25rem;
+        }
+        .message.bot {
+            background-color: #e2e8f0; /* Lighter grey */
+            align-self: flex-start; /* Align to the left */
+            border-bottom-left-radius: 0.25rem;
+        }
+        .message.system {
+            background-color: #fff;
+            color: #6b7280;
+            font-style: italic;
+            text-align: center;
+            font-size: 0.9em;
+            align-self: center;
+            max-width: 100%;
+            box-shadow: none;
+            border: 1px dashed #e5e7eb;
+        }
+        .message.loading {
+            background-color: #fef3c7;
+            align-self: flex-start;
+            font-style: italic;
+            color: #6b7280;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .chat-input-area {
+            border-top: 1px solid #e2e8f0;
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            background-color: #f0f2f5;
+        }
+        .chat-input {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .chat-input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .button-primary {
+            background-color: #4f46e5;
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .button-primary:hover { background-color: #4338ca; }
+        .button-primary:disabled { background-color: #a5b4fc; cursor: not-allowed; }
+
+        .button-secondary {
+            background-color: #6b7280; /* Gray */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .button-secondary:hover { background-color: #4b5563; }
+        .button-secondary:disabled { background-color: #d1d5db; cursor: not-allowed; }
+
+        .button-green {
+            background-color: #10b981; /* Green */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .button-green:hover { background-color: #059669; }
+        .button-green:disabled { background-color: #a7f3d0; cursor: not-allowed; }
+
+        .audio-upload-area {
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: #f8fafc;
+        }
+        .audio-analysis-results {
+            background-color: #eef2ff; /* Light indigo background */
+            border: 1px solid #c7d2fe;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            /* Allow internal scrolling if content is too large */
+            overflow-y: auto;
+            max-height: calc(100vh - 350px); /* Adjust based on header/input height */
+        }
+        .audio-analysis-results img {
+            max-width: 100%; /* Ensure image doesn't overflow horizontally */
+            height: auto;
+            display: block; /* Remove extra space below image */
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .radar-chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px; /* Fixed height for the canvas */
+            margin-top: 1rem;
+            background-color: #fff; /* White background for chart */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+        @media (max-width: 768px) {
+            body { padding: 0; }
+            .app-container {
+                height: 98vh;
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .chat-input-area { flex-direction: column; }
+            .chat-input { width: 100%; }
+            .button-primary, .button-secondary, .button-green { width: 100%; }
+            .audio-analysis-results {
+                max-height: calc(100vh - 280px); /* Adjust for smaller screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="m22 2-7 7m7-7-7 7L2 22l20-20z"/></svg>
+            PsiChat - Psicólogo Virtual
+        </div>
+
+        <!-- Global Error Display -->
+        <div class="global-error-display bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4 hidden" role="alert">
+          <strong class="font-bold mr-2">Error!</strong>
+          <span class="block sm:inline" id="error-message-text"></span>
+          <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="this.parentElement.style.display='none';">
+            <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.697l-2.651 2.652a1.2 1.2 0 1 1-1.697-1.697L8.303 10 5.651 7.348a1.2 1.2 0 1 1 1.697-1.697L10 8.303l2.651-2.652a1.2 1.2 0 1 1 1.697 1.697L11.697 10l2.651 2.651a1.2 1.2 0 0 1 0 1.698z"/></svg>
+          </span>
+        </div>
+
+
+        <nav class="nav-tabs">
+            <button id="chat-tab" class="nav-tab active">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-text"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="10" x2="14" y1="12" y2="12"/></svg>
+                Chat
+            </button>
+            <button id="audio-tab" class="nav-tab">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-headset"><path d="M4 14V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4v3a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-3H4a2 2 0 0 1-2-2z"/><path d="M18 10h2a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"/></svg>
+                Análisis de Audio
+            </button>
+        </nav>
+
+        <main class="content-area p-4">
+            <div id="chat-content" class="flex flex-col flex-1 bg-white rounded-lg shadow-md overflow-hidden">
+                <div id="chat-box" class="chat-box">
+                    <div class="message bot">
+                        <p class="font-medium text-xs text-gray-500 mb-1">Ayudante • <span class="message-time"></span></p>
+                        <p>¡Hola! Soy Gemini, soy un soporte emocional para estudiantes, o herramienta para psicólogos, escribe algo y analizaré los sentimientos, o, carga un archivo de audio y analizaré las emociones dentro de este</p>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" id="user-input" class="chat-input" placeholder="Escribe un mensaje...">
+                    <button id="send-button" class="button-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 7m7-7-7 7L2 22l20-20z"/></svg>
+                        <span>Enviar y Analizar</span>
+                    </button>
+                    <button id="clear-chat-button" class="button-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"/><path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/></svg>
+                        <span>Limpiar Chat</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="audio-content" class="hidden flex-col flex-1 bg-white rounded-lg shadow-md overflow-hidden p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Analizar Audio (WAV)</h2>
+
+                <div class="audio-upload-area">
+                    <label for="audio-file-input" class="block text-gray-700 font-semibold">Cargar archivo WAV:</label>
+                    <input type="file" id="audio-file-input" accept="audio/wav" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer">
+                    <p id="selected-audio-filename" class="text-sm text-gray-600 hidden"></p>
+                    <button id="analyze-audio-button" class="button-green">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        <span>Analizar Audio</span>
+                    </button>
+                </div>
+
+                <div id="audio-analysis-results" class="hidden audio-analysis-results custom-scrollbar">
+                    <h3 class="font-semibold text-lg text-indigo-700 mb-2">Analysis Results:</h3>
+                    
+                    <!-- NEW: Radar Chart for Emotions -->
+                    <h4 class="font-semibold text-base mt-4 mb-2 text-gray-700">Simulated Emotions:</h4>
+                    <div class="radar-chart-container">
+                        <canvas id="emotionRadarChart"></canvas>
+                    </div>
+
+                    <!-- Spectrogram Image -->
+                    <h4 class="font-semibold text-base mt-4 mb-2 text-gray-700">Spectrogram:</h4>
+                    <img id="spectrogram-image" alt="Spectrogram" class="w-full h-auto rounded-lg shadow-md border border-gray-300">
+                </div>
+                <div id="audio-placeholder-message" class="text-center text-gray-500 py-4">Por favor, cargue un archivo de audio para analizar</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Lucide Icons initialization (IMPORTANT for icons to show) ---
+        lucide.createIcons();
+
+        // --- DOM Elements ---
+        const chatTab = document.getElementById('chat-tab');
+        const audioTab = document.getElementById('audio-tab');
+        const chatContent = document.getElementById('chat-content');
+        const audioContent = document.getElementById('audio-content');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const clearChatButton = document.getElementById('clear-chat-button');
+        const audioFileInput = document.getElementById('audio-file-input');
+        const selectedAudioFilename = document.getElementById('selected-audio-filename');
+        const analyzeAudioButton = document.getElementById('analyze-audio-button');
+        const audioAnalysisResults = document.getElementById('audio-analysis-results');
+        const spectrogramImage = document.getElementById('spectrogram-image');
+        const audioPlaceholderMessage = document.getElementById('audio-placeholder-message');
+        const globalErrorDisplay = document.querySelector('.global-error-display');
+        const errorMessageText = document.getElementById('error-message-text');
+
+        // Chart.js elements
+        const emotionRadarChartCanvas = document.getElementById('emotionRadarChart');
+        let emotionChart = null; // To hold the Chart.js instance
+
+        // --- State Variables (Simulating React useState) ---
+        let chatMessages = []; // In-memory history
+        let isSendingChatMessage = false;
+        let selectedFile = null; // This will hold the File object
+        let isAnalyzingAudio = false;
+
+        // --- Helper Functions ---
+
+        function updateTimeDisplay(element) {
+            const now = new Date();
+            element.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessageToChat(text, role, userName = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', role);
+
+            const timeSpan = document.createElement('span');
+            timeSpan.classList.add('message-time');
+            updateTimeDisplay(timeSpan);
+
+            const headerP = document.createElement('p');
+            headerP.classList.add('font-medium', 'text-xs', 'text-gray-500', 'mb-1');
+            headerP.innerHTML = `${userName || (role === 'user' ? 'You' : role === 'bot' ? 'Gemini AI' : 'System')} • `;
+            headerP.appendChild(timeSpan);
+
+
+            const textP = document.createElement('p');
+            textP.classList.add('whitespace-pre-wrap'); // Preserves line breaks
+            textP.textContent = text;
+
+            messageDiv.appendChild(headerP);
+            messageDiv.appendChild(textP);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons(); // Re-render icons if any new ones are added
+        }
+
+        function showLoadingIndicator(type) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = `loading-indicator-${type}`;
+            loadingDiv.classList.add('message', 'loading');
+            loadingDiv.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader inline animate-spin mr-2"></svg> Respuesta...';
+            chatBox.appendChild(loadingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function hideLoadingIndicator(type) {
+            const loadingDiv = document.getElementById(`loading-indicator-${type}`);
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        function setGlobalError(message) {
+            errorMessageText.textContent = message;
+            globalErrorDisplay.classList.remove('hidden'); // Show the error div
+        }
+
+        function clearGlobalError() {
+            errorMessageText.textContent = ''; // Ensure message is cleared
+            globalErrorDisplay.classList.add('hidden'); // Hide the error div
+        }
+
+        // --- Chart.js Radar Chart Function ---
+        function createOrUpdateEmotionChart(emotionsData) {
+            const labels = Object.keys(emotionsData);
+            const dataValues = Object.values(emotionsData);
+
+            if (emotionChart) {
+                emotionChart.destroy(); // Destroy previous chart instance
+            }
+
+            const ctx = emotionRadarChartCanvas.getContext('2d');
+            emotionChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Simulated Emotion Level',
+                        data: dataValues,
+                        backgroundColor: 'rgba(79, 70, 229, 0.4)', // Indigo-500 with alpha
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(79, 70, 229, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: '#333'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 1.0, // Emotions are 0-1
+                            ticks: {
+                                display: false // Hide numerical ticks on the axes
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // Hide legend
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.r !== null) {
+                                        label += (context.parsed.r * 100).toFixed(0) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // --- Event Handlers ---
+
+        // Tab Switching
+        chatTab.addEventListener('click', () => {
+            chatTab.classList.add('active');
+            audioTab.classList.remove('active');
+            chatContent.classList.remove('hidden');
+            audioContent.classList.add('hidden');
+            clearGlobalError(); // Clear error when switching tabs
+            lucide.createIcons();
+        });
+
+        audioTab.addEventListener('click', () => {
+            audioTab.classList.add('active');
+            chatTab.classList.remove('active');
+            audioContent.classList.remove('hidden');
+            chatContent.classList.add('hidden');
+            clearGlobalError(); // Clear error when switching tabs
+            lucide.createIcons();
+        });
+
+        // Chat Handlers
+        async function handleSendChatMessage() {
+            const message = userInput.value.trim();
+            if (!message || isSendingChatMessage) return;
+
+            isSendingChatMessage = true;
+            sendButton.disabled = true;
+            clearChatButton.disabled = true;
+            userInput.disabled = true;
+            clearGlobalError(); // Clear global error at the start of any new action
+
+            addMessageToChat(message, 'user', 'Tu');
+            chatMessages.push({ role: 'user', parts: [{ text: message }] });
+            userInput.value = '';
+
+            showLoadingIndicator('chat');
+
+            try {
+                const response = await fetch('/chat-and-analyze-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        history: chatMessages.filter(msg => msg.role !== 'system')
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`Backend error: ${response.status} - ${errorBody.detail || 'Unknown error'}`);
+                }
+
+                const data = await response.json();
+                const botResponseText = data.bot_response;
+                const textAnalysisResult = data.text_analysis;
+
+                hideLoadingIndicator('chat');
+                addMessageToChat(botResponseText, 'bot', 'Gemini AI');
+                addMessageToChat(`Analysis: ${textAnalysisResult}`, 'system', 'Análisis');
+
+                chatMessages.push({ role: 'model', parts: [{ text: botResponseText }] });
+
+            } catch (err) {
+                console.error("Error sending chat message:", err);
+                hideLoadingIndicator('chat');
+                setGlobalError(`Chat/Analysis failed: ${err.message}. Please check FastAPI console.`);
+                chatMessages.pop();
+            } finally {
+                isSendingChatMessage = false;
+                sendButton.disabled = false;
+                if (chatMessages.length > 1) {
+                    clearChatButton.disabled = false;
+                }
+                userInput.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        sendButton.addEventListener('click', handleSendChatMessage);
+        userInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && !isSendingChatMessage) {
+                handleSendChatMessage();
+            }
+        });
+
+        clearChatButton.addEventListener('click', () => {
+            chatMessages = [];
+            chatBox.innerHTML = '';
+            addMessageToChat("Chat cleared! How can I help you now?", 'bot', 'Gemini AI');
+            clearChatButton.disabled = true;
+            clearGlobalError();
+            userInput.focus();
+        });
+
+
+        // Audio Analysis Handlers
+        audioFileInput.addEventListener('change', (event) => {
+            console.log("DEBUG: --- File input change event detected! ---");
+            clearGlobalError(); // <-- IMPORTANT: Always clear error at the very start of 'change' event
+            
+            const files = event.target.files;
+            let file = null;
+
+            if (files && files.length > 0) {
+                file = files[0];
+                console.log(`DEBUG: File found: Name: '${file.name}', Type: '${file.type}', Size: ${file.size} bytes.`);
+            } else {
+                console.log("DEBUG: No file selected (files array is empty or null).");
+            }
+
+            if (file && file.type === "audio/wav") {
+                selectedFile = file; // Set the global variable
+                selectedAudioFilename.textContent = `Selected: ${file.name}`;
+                selectedAudioFilename.classList.remove('hidden');
+                audioAnalysisResults.classList.add('hidden'); // Hide previous analysis results
+                audioPlaceholderMessage.classList.add('hidden'); // Hide "Please upload..." message
+                analyzeAudioButton.disabled = false; // Enable analyze button
+                console.log("DEBUG: Valid WAV file selected. 'selectedFile' updated. Analyze button enabled.");
+            } else {
+                // Handle invalid file or no file selected/cancelled dialog
+                selectedFile = null; // Clear selected file
+                selectedAudioFilename.classList.add('hidden'); // Hide filename display
+                analyzeAudioButton.disabled = true; // Disable if invalid or no file
+                
+                if (file) { // If a file was selected, but it was the wrong type
+                    setGlobalError("Invalid file type. Please select a WAV audio file.");
+                    console.log("DEBUG: Invalid file type selected (not WAV). 'selectedFile' cleared. Analyze button disabled. Error message set.");
+                } else { // If dialog was cancelled or no file chosen
+                    setGlobalError("No audio file selected. Please choose a WAV file.");
+                    console.log("DEBUG: No file selected or file selection cancelled. 'selectedFile' cleared. Analyze button disabled. Error message set.");
+                }
+            }
+        });
+
+        async function handleAnalyzeAudio() {
+            console.log("DEBUG: --- handleAnalyzeAudio called! ---");
+            console.log(`DEBUG: Current state - selectedFile: ${selectedFile ? selectedFile.name : 'null'}, isAnalyzingAudio: ${isAnalyzingAudio}`);
+
+            if (!selectedFile) {
+                console.log("DEBUG: handleAnalyzeAudio aborted because no file is selected (!selectedFile is true). Showing specific error.");
+                setGlobalError("Please select an audio file first. (No file in memory)");
+                return;
+            }
+            if (isAnalyzingAudio) {
+                console.log("DEBUG: handleAnalyzeAudio aborted because analysis is already in progress (isAnalyzingAudio is true). Showing specific error.");
+                setGlobalError("Audio analysis is already in progress. Please wait.");
+                return;
+            }
+
+            isAnalyzingAudio = true;
+            analyzeAudioButton.disabled = true;
+            audioFileInput.disabled = true;
+            clearGlobalError(); // Clear global error at the start of any new action
+
+            audioAnalysisResults.classList.add('hidden'); // Hide old results
+            audioPlaceholderMessage.classList.add('hidden'); // Hide placeholder
+
+            // Clear previous results display
+            if (emotionChart) {
+                emotionChart.destroy();
+                emotionChart = null;
+                console.log("DEBUG: Previous emotion chart destroyed.");
+            }
+            spectrogramImage.src = ''; // Clear old image src
+            spectrogramImage.alt = "Analyzing audio..."; // Update alt text for loading state
+
+            // Show loading message/placeholder
+            audioAnalysisResults.classList.remove('hidden'); // Ensure results div is visible
+            spectrogramImage.src = "https://placehold.co/400x200/cccccc/000000?text=Analyzing+Audio...";
+            
+            console.log("DEBUG: Sending fetch request to /analyze-audio.");
+            const formData = new FormData();
+            formData.append('audio_file', selectedFile); // Use the global selectedFile here
+
+            try {
+                const response = await fetch('/analyze-audio', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    console.error("DEBUG: Backend audio analysis response NOT OK:", errorBody);
+                    throw new Error(`Backend error: ${response.status} - ${errorBody.detail || 'Unknown error'}`);
+                }
+
+                const data = await response.json();
+                console.log("DEBUG: Received audio analysis data:", data);
+                
+                if (data.simulated_emotions) {
+                    console.log("DEBUG: Attempting to create/update emotion chart with:", data.simulated_emotions);
+                    createOrUpdateEmotionChart(data.simulated_emotions);
+                    console.log("DEBUG: Emotion chart updated successfully.");
+                } else {
+                    console.warn("DEBUG: No 'simulated_emotions' data in response.");
+                    setGlobalError("Audio analysis did not return emotion data.");
+                }
+
+                spectrogramImage.src = data.spectrogram_image_b64;
+                spectrogramImage.alt = "Spectrogram of uploaded audio";
+                console.log("DEBUG: Spectrogram image updated successfully.");
+
+                clearGlobalError(); // Ensure error is cleared on full success
+
+            } catch (err) {
+                console.error("DEBUG: Error caught during audio analysis:", err);
+                setGlobalError(`Audio analysis failed: ${err.message}. Please check FastAPI console.`);
+                // If error, ensure chart is destroyed and image is fallback
+                if (emotionChart) {
+                    emotionChart.destroy();
+                    emotionChart = null;
+                }
+                spectrogramImage.src = "https://placehold.co/400x200/cccccc/000000?text=Analysis+Failed";
+                spectrogramImage.alt = "Analysis Failed";
+            } finally {
+                isAnalyzingAudio = false;
+                analyzeAudioButton.disabled = false;
+                audioFileInput.disabled = false;
+                audioFileInput.value = ''; // Important: Reset the file input value so selecting same file again triggers 'change'
+                console.log("DEBUG: handleAnalyzeAudio finished (finally block). File input value reset.");
+            }
+        }
+
+        analyzeAudioButton.addEventListener('click', handleAnalyzeAudio);
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialMessageTime = chatBox.querySelector('.message.bot .message-time');
+            if (initialMessageTime) {
+                updateTimeDisplay(initialMessageTime);
+            }
+            userInput.focus();
+            lucide.createIcons(); // Initialize all icons on page load
+            if (chatMessages.length <= 1) {
+                clearChatButton.disabled = true;
+            } else {
+                clearChatButton.disabled = false;
+            }
+            console.log("DEBUG: DOMContentLoaded completed. Initial setup done.");
+        });
+    </script>
+</body>
+</html>
