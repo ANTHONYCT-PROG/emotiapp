@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+httpx
+jinja2
+scipy
+numpy
+matplotlib
+soundfile
