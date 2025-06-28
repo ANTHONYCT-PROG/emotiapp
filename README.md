@@ -1,6 +1,6 @@
 # EmotiApp - Asistente Emocional
 
-**EmotiApp** es una aplicación web desarrollada con **FastAPI** y **HTML + Tailwind**, que permite analizar emociones y sentimientos a partir de texto y audio. Está pensada como una herramienta de apoyo emocional para estudiantes, psicólogos y tutores.
+**EmotiApp** es una aplicación web desarrollada con **FastAPI** y **HTML + Tailwind**, que permite analizar emociones y sentimientos a partir de texto y audio. Está pensada como una herramienta de apoyo emocional para estudiantes, psicólogos y tutores .
 
 ---
 
